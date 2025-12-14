@@ -1,0 +1,11 @@
+port: 9200
+context-path: "account-guru"
+
+database:
+  host: localhost
+  port: "5432"
+  dbname: AccountGuru
+  sslmode: disable
+  username: postgres
+  password: "root"
+

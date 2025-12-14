@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Product CRUD</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      padding: 20px;
+    }
+
+    h2 {
+      margin-bottom: 10px;
+    }
+
+    .card {
+      background: #fff;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 6px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    input {
+      padding: 8px;
+      margin: 5px;
+      width: 180px;
+    }
+
+    button {
+      padding: 8px 12px;
+      margin: 5px;
+      cursor: pointer;
+      border: none;
+      border-radius: 4px;
+    }
+
+    button.primary { background: #007bff; color: white; }
+    button.success { background: #28a745; color: white; }
+    button.warning { background: #ffc107; }
+    button.danger { background: #dc3545; color: white; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      background: #fff;
+    }
+
+    th, td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+
+    th {
+      background: #007bff;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Product Management</h2>
+
+<!-- ADD / UPDATE PRODUCT -->
+<div class="card">
+  <h3>Add / Update Product</h3>
+
+  <input type="hidden" id="productId">
+
+  <input id="name" placeholder="Name">
+  <input id="description" placeholder="Description">
+  <input id="price" type="number" placeholder="Price">
+  <input id="qty" type="number" placeholder="Quantity">
+
+  <br>
+  <button class="success" onclick="saveProduct()">Save Product</button>
+  <button class="warning" onclick="resetForm()">Reset</button>
+</div>
+
+<!-- SEARCH -->
+<div class="card">
+  <h3>Search Product by ID</h3>
+  <input id="searchId" type="number" placeholder="Product ID">
+  <button class="primary" onclick="searchProduct()">Search</button>
+  <button onclick="loadProducts()">Get All</button>
+</div>
+
+<!-- TABLE -->
+<div class="card">
+  <h3>Product List</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Description</th>
+        <th>Price</th>
+        <th>Qty</th>
+        <th>Created At</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="productTable"></tbody>
+  </table>
+</div>
+
+<script>
+  const BASE_URL = "http://localhost:9200/account-guru/products";
+
+  // Load all products
+  function loadProducts() {
+    fetch(BASE_URL)
+      .then(res => res.json())
+      .then(data => renderTable(data.data || data))
+      .catch(err => alert(err));
+  }
+
+  // Render table
+  function renderTable(products) {
+    const table = document.getElementById("productTable");
+    table.innerHTML = "";
+
+    products.forEach(p => {
+      table.innerHTML += `
+        <tr>
+          <td>${p.id}</td>
+          <td>${p.name}</td>
+          <td>${p.description}</td>
+          <td>${p.price}</td>
+          <td>${p.qty}</td>
+          <td>${new Date(p.created_at).toLocaleString()}</td>
+          <td>
+            <button class="warning" onclick='editProduct(${JSON.stringify(p)})'>Update</button>
+            <button class="danger" onclick="deleteProduct(${p.id})">Delete</button>
+          </td>
+        </tr>
+      `;
+    });
+  }
+
+  // Save (Create / Update)
+  function saveProduct() {
+    const id = document.getElementById("productId").value;
+
+    const payload = {
+      name: document.getElementById("name").value,
+      description: document.getElementById("description").value,
+      price: Number(document.getElementById("price").value),
+      qty: Number(document.getElementById("qty").value),
+    };
+
+    const method = id ? "PUT" : "POST";
+    const url = id ? `${BASE_URL}/${id}` : BASE_URL;
+
+    fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+    .then(() => {
+      resetForm();
+      loadProducts();
+    })
+    .catch(err => alert(err));
+  }
+
+  // Edit
+  function editProduct(p) {
+    document.getElementById("productId").value = p.id;
+    document.getElementById("name").value = p.name;
+    document.getElementById("description").value = p.description;
+    document.getElementById("price").value = p.price;
+    document.getElementById("qty").value = p.qty;
+  }
+
+  // Delete
+  function deleteProduct(id) {
+    if (!confirm("Delete this product?")) return;
+
+    fetch(`${BASE_URL}/${id}`, { method: "DELETE" })
+      .then(() => loadProducts())
+      .catch(err => alert(err));
+  }
+
+  // Search by ID
+  function searchProduct() {
+    const id = document.getElementById("searchId").value;
+    if (!id) return;
+
+    fetch(`${BASE_URL}/${id}`)
+      .then(res => res.json())
+      .then(data => renderTable([data.data || data]))
+      .catch(() => alert("Product not found"));
+  }
+
+  function resetForm() {
+    document.getElementById("productId").value = "";
+    document.getElementById("name").value = "";
+    document.getElementById("description").value = "";
+    document.getElementById("price").value = "";
+    document.getElementById("qty").value = "";
+  }
+
+  // Initial load
+  loadProducts();
+</script>
+
+</body>
+</html>
